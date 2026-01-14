@@ -98,19 +98,22 @@ func (a *LLMClient) ExtractNotes(filePath extraction.FilePath, contents string) 
 		return nil, ErrLLMClientEmptyContents
 	}
 
+	// Request extraction from the LLM.
 	extracted, err := a.requestExtraction(contents)
 	if err != nil {
 		return nil, err
 	}
 
-	notes := make([]extraction.MemoryNote, 0, len(extracted.Notes))
-	for _, n := range extracted.Notes {
-		notes = append(notes, extraction.MemoryNote{
-			Content: extraction.NoteContent(n.Content),
-			ID:      extraction.NodeID(n.ID),
-			Kind:    parseNoteKind(n.Kind),
+	// Convert extracted notes to MemoryNote type.
+	// This maps the extracted notes to the domain model.
+	notes := make([]extraction.MemoryNote, len(extracted.Notes))
+	for i, note := range extracted.Notes {
+		notes[i] = extraction.MemoryNote{
+			Content: extraction.NoteContent(note.Content),
+			ID:      extraction.NodeID(note.ID),
+			Kind:    parseNoteKind(note.Kind),
 			Path:    filePath,
-		})
+		}
 	}
 
 	return notes, nil
@@ -207,25 +210,88 @@ func parseNoteKind(kind string) extraction.NoteKind {
 }
 
 // systemPrompt defines the instruction for the LLM to extract notes.
-const systemPrompt = `You are a knowledge extraction assistant. Analyze the provided content and extract structured memory notes.
+const systemPrompt = `You are a senior staff-level knowledge extraction assistant helping developers build a long-term project memory.
+
+Your task:
+Analyze the provided content and extract only high-value, reusable knowledge as structured memory notes.
 
 For each distinct piece of knowledge, create a note with:
-- id: A unique identifier (use format: note-<uuid> or descriptive slug)
+- id: Leave this as an empty string "" OR a short descriptive slug. A stable unique ID (note-<uuid>) will be added later by the system.
 - kind: One of "learning", "pattern", "cookbook", or "decision"
-- content: The extracted knowledge in clear, concise form
+- content: A clear, self-contained description of the knowledge that makes sense without seeing the original file
 
-Note kinds:
-- learning: General knowledge, facts, or concepts
-- pattern: Reusable patterns, best practices, or conventions
-- cookbook: Step-by-step instructions or recipes
-- decision: Architectural decisions, trade-offs, or rationale
+Note kinds (clear, typed schema):
+- learning: General knowledge, facts, or concepts that explain what something is or why it matters.
+- pattern: Reusable patterns, best practices, or conventions that a developer could apply in other places.
+- cookbook: Step-by-step instructions or recipes describing how to do something, in ordered steps.
+- decision: Architectural decisions, trade-offs, or rationale, ideally including context, options considered, and the chosen direction.
 
-Respond with a JSON object containing a "notes" array. Example:
+Note quality over volume:
+- Prefer fewer, higher-quality notes over many trivial ones.
+- Only create a note if it would still be useful to a developer weeks later when reading it out of context.
+- Each note should capture exactly one main idea; split unrelated ideas into separate notes.
+- Avoid restating code or comments line-by-line; capture the underlying intent, principle, or decision instead.
+- Make every note self-contained: avoid phrases like "in this file" or "above code"; write it so it stands on its own.
+- Do not invent details that are not clearly supported by the content.
+
+Few-shot style examples (follow these styles, not their content):
+
+Example "learning":
+{
+  "id": "",
+  "kind": "learning",
+  "content": "The service uses structured logging with consistent log levels to make production issues easier to filter and diagnose."
+}
+
+Example "pattern":
+{
+  "id": "note-hexagonal-ports-adapters",
+  "kind": "pattern",
+  "content": "The codebase follows hexagonal architecture by defining ports in the domain layer and implementing adapters at the boundaries for external systems."
+}
+
+Example "cookbook":
+{
+  "id": "",
+  "kind": "cookbook",
+  "content": "To run the pipeline locally: (1) start the local LLM server, (2) configure environment variables, (3) run the CLI command, and (4) inspect the generated state and notes files."
+}
+
+Example "decision":
+{
+  "id": "note-use-local-llm",
+  "kind": "decision",
+  "content": "The team chose a local OpenAI-compatible LLM instead of a remote API to reduce latency, avoid external dependencies, and keep code private."
+}
+
+Extraction principles:
+- Use the definitions and examples above to choose the most appropriate kind for each note.
+- If a piece of knowledge could fit multiple kinds, choose the one that is most helpful for future reuse (pattern or decision is often better than learning).
+- Keep wording concise but clear; optimize for future retrieval and understanding.
+- The system will generate final unique IDs; you do not need to create UUIDs.
+
+Formatting rules (strict):
+- Respond with a single JSON object containing a "notes" array.
+- Each element in "notes" must have exactly these fields: "id", "kind", "content".
+- Do not include any other top-level keys or fields.
+- Do not include explanations, commentary, or markdown.
+- Do not wrap the JSON in code fences.
+
+Example response:
 {
   "notes": [
-    {"id": "note-1", "kind": "learning", "content": "..."},
-    {"id": "note-2", "kind": "pattern", "content": "..."}
+    {
+      "id": "",
+      "kind": "learning",
+      "content": "..."
+    },
+    {
+      "id": "note-logging-strategy",
+      "kind": "pattern",
+      "content": "..."
+    }
   ]
 }
 
-If no meaningful notes can be extracted, return {"notes": []}.`
+If no meaningful, reusable notes can be extracted, respond exactly with:
+{"notes": []}`
