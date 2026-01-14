@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/andygeiss/cloud-native-utils/assert"
 	"github.com/andygeiss/memory-pipeline/internal/adapters/inbound"
@@ -295,6 +296,9 @@ func TestFileWalker_NextPending_FileContentChanged_ReturnsPendingFile(t *testing
 	fw1, _ := inbound.NewFileWalker(tmpDir, stateFile, []string{".md"})
 	file, _ := fw1.NextPending()
 	_ = fw1.MarkProcessed(file.Path)
+
+	// Ensure ModTime changes (filesystem granularity can be 1s on some systems)
+	time.Sleep(10 * time.Millisecond)
 	writeTestFile(t, testFile, "# Modified Content")
 	fw2, _ := inbound.NewFileWalker(tmpDir, stateFile, []string{".md"})
 
