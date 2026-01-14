@@ -91,7 +91,7 @@ lint:
 
 profile:
     @echo "Running benchmarks with CPU profiling..."
-    @go test -bench=. -benchtime=10s -cpuprofile=cpuprofile.pprof ./cmd/server/...
+    @go test -bench=. -benchtime=10s -cpuprofile=cpuprofile.pprof ./cmd/cli/...
     @echo "Generating SVG visualization..."
     @go tool pprof -svg cpuprofile.pprof > cpuprofile.svg
     @echo "Profile written to cpuprofile.pprof"

@@ -12,7 +12,7 @@ import (
 	"sync"
 
 	"github.com/andygeiss/cloud-native-utils/security"
-	"github.com/loopforge-ai/memory-pipeline/internal/domain/extraction"
+	"github.com/andygeiss/memory-pipeline/internal/domain/extraction"
 )
 
 // Error definitions for the FileWalker adapter.

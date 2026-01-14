@@ -7,8 +7,8 @@ import (
 	"testing"
 
 	"github.com/andygeiss/cloud-native-utils/assert"
-	"github.com/loopforge-ai/memory-pipeline/internal/adapters/inbound"
-	"github.com/loopforge-ai/memory-pipeline/internal/domain/extraction"
+	"github.com/andygeiss/memory-pipeline/internal/adapters/inbound"
+	"github.com/andygeiss/memory-pipeline/internal/domain/extraction"
 )
 
 func TestFileWalker_New_EmptyExtensions_ReturnsError(t *testing.T) {

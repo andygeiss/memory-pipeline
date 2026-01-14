@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/andygeiss/cloud-native-utils/assert"
-	"github.com/loopforge-ai/memory-pipeline/internal/domain/extraction"
+	"github.com/andygeiss/memory-pipeline/internal/domain/extraction"
 )
 
 const testFileContent = "Test content"

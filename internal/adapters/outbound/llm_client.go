@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/loopforge-ai/memory-pipeline/internal/domain/extraction"
+	"github.com/andygeiss/memory-pipeline/internal/domain/extraction"
 )
 
 // Error definitions for the LLMClient adapter.

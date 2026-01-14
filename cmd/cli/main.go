@@ -4,10 +4,10 @@ import (
 	"log"
 
 	"github.com/andygeiss/cloud-native-utils/service"
-	"github.com/loopforge-ai/memory-pipeline/internal/adapters/inbound"
-	"github.com/loopforge-ai/memory-pipeline/internal/adapters/outbound"
-	"github.com/loopforge-ai/memory-pipeline/internal/config"
-	"github.com/loopforge-ai/memory-pipeline/internal/domain/extraction"
+	"github.com/andygeiss/memory-pipeline/internal/adapters/inbound"
+	"github.com/andygeiss/memory-pipeline/internal/adapters/outbound"
+	"github.com/andygeiss/memory-pipeline/internal/config"
+	"github.com/andygeiss/memory-pipeline/internal/domain/extraction"
 )
 
 func main() {
@@ -30,12 +30,13 @@ func run() error {
 	// Get configuration parameters.
 	cfg := config.NewConfig()
 
-	// Initialize adapters.
+	// Initialize inbound adapters.
 	fs, err := inbound.NewFileWalker(cfg.MemorySourceDir, extraction.FilePath(cfg.MemoryStateFile), cfg.FileExtensions)
 	if err != nil {
 		return err
 	}
 
+	// Initialize outbound adapters.
 	ec, err := outbound.NewEmbeddingClient(cfg.OpenAIAPIKey, cfg.OpenAIBaseURL, cfg.OpenAIEmbedModel)
 	if err != nil {
 		return err

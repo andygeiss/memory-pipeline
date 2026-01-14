@@ -1,4 +1,4 @@
-module github.com/loopforge-ai/memory-pipeline
+module github.com/andygeiss/memory-pipeline
 
 go 1.25.5
 
