@@ -66,6 +66,21 @@ go mod download
    - `.memory-state.json` — Processing state for each file
    - `.memory-notes.json` — Extracted notes with embeddings
 
+## Commands
+
+```bash
+just run              # Run the CLI locally
+just test             # Run tests with coverage
+just test-integration # Run integration tests (requires LM Studio)
+just profile          # Run benchmarks and generate CPU profile for PGO
+just fmt              # Format code
+just lint             # Lint code
+just build            # Build Docker image
+just up               # Start services
+just down             # Stop services
+just setup            # Install dependencies (macOS)
+```
+
 ## Configuration
 
 Configuration is done via environment variables. Create a `.env` file or export variables directly:
@@ -86,21 +101,6 @@ Configuration is done via environment variables. Create a `.env` file or export 
 ```bash
 # Process only markdown files in ./docs
 MEMORY_SOURCE_DIR=./docs APP_FILE_EXTENSIONS=.md just run
-```
-
-## Commands
-
-```bash
-just run              # Run the CLI locally
-just test             # Run tests with coverage
-just test-integration # Run integration tests (requires LM Studio)
-just profile          # Run benchmarks and generate CPU profile for PGO
-just fmt              # Format code
-just lint             # Lint code
-just build            # Build Docker image
-just up               # Start services
-just down             # Stop services
-just setup            # Install dependencies (macOS)
 ```
 
 ## Project Structure

@@ -18,49 +18,7 @@ This project follows Domain-Driven Design (DDD) with Hexagonal Architecture, ser
 
 ---
 
-## 3. High-Level Architecture
-
-The project uses **Hexagonal Architecture** (Ports and Adapters):
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                         cmd/cli                             │
-│                    (Application Entry)                      │
-└─────────────────────────────┬───────────────────────────────┘
-                              │
-┌─────────────────────────────▼───────────────────────────────┐
-│                    internal/domain                          │
-│              (Business Logic & Port Interfaces)             │
-│                                                             │
-│  extraction/                                                │
-│    ├── ports.go      → Port interfaces (FileStore, LLM...)  │
-│    ├── service.go    → Core extraction pipeline             │
-│    └── file.go       → Domain types (File, Note, etc.)      │
-└─────────────────────────────┬───────────────────────────────┘
-                              │
-┌─────────────────────────────▼───────────────────────────────┐
-│                   internal/adapters                         │
-│                 (Port Implementations)                      │
-│                                                             │
-│  inbound/                                                   │
-│    └── file_walker.go  → FileStore implementation           │
-│                                                             │
-│  outbound/                                                  │
-│    ├── embedding_client.go  → EmbeddingClient impl          │
-│    ├── llm_client.go        → LLMClient implementation      │
-│    └── note_store.go        → NoteStore implementation      │
-└─────────────────────────────────────────────────────────────┘
-```
-
-**Key Layers:**
-- **Domain (`internal/domain/`):** Pure business logic with no external dependencies. Defines port interfaces that adapters must implement.
-- **Adapters (`internal/adapters/`):** Implementations of domain ports. Split into `inbound/` (driving adapters) and `outbound/` (driven adapters).
-- **Config (`internal/config/`):** Environment-based configuration loading.
-- **Entry Point (`cmd/cli/`):** Wires adapters to domain services and runs the application.
-
----
-
-## 4. Directory Structure (Contract)
+## 3. Directory Structure (Contract)
 
 ```
 memory-pipeline/
@@ -110,6 +68,48 @@ memory-pipeline/
 4. **Configuration** lives in `internal/config/` and uses environment variables
 
 5. **Entry points** live in `cmd/<app-name>/main.go`
+
+---
+
+## 4. High-Level Architecture
+
+The project uses **Hexagonal Architecture** (Ports and Adapters):
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                         cmd/cli                             │
+│                    (Application Entry)                      │
+└─────────────────────────────┬───────────────────────────────┘
+                              │
+┌─────────────────────────────▼───────────────────────────────┐
+│                    internal/domain                          │
+│              (Business Logic & Port Interfaces)             │
+│                                                             │
+│  extraction/                                                │
+│    ├── ports.go      → Port interfaces (FileStore, LLM...)  │
+│    ├── service.go    → Core extraction pipeline             │
+│    └── file.go       → Domain types (File, Note, etc.)      │
+└─────────────────────────────┬───────────────────────────────┘
+                              │
+┌─────────────────────────────▼───────────────────────────────┐
+│                   internal/adapters                         │
+│                 (Port Implementations)                      │
+│                                                             │
+│  inbound/                                                   │
+│    └── file_walker.go  → FileStore implementation           │
+│                                                             │
+│  outbound/                                                  │
+│    ├── embedding_client.go  → EmbeddingClient impl          │
+│    ├── llm_client.go        → LLMClient implementation      │
+│    └── note_store.go        → NoteStore implementation      │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Key Layers:**
+- **Domain (`internal/domain/`):** Pure business logic with no external dependencies. Defines port interfaces that adapters must implement.
+- **Adapters (`internal/adapters/`):** Implementations of domain ports. Split into `inbound/` (driving adapters) and `outbound/` (driven adapters).
+- **Config (`internal/config/`):** Environment-based configuration loading.
+- **Entry Point (`cmd/cli/`):** Wires adapters to domain services and runs the application.
 
 ---
 
