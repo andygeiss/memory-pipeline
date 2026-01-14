@@ -4,8 +4,8 @@
 [![License](https://img.shields.io/github/license/andygeiss/memory-pipeline)](https://github.com/andygeiss/memory-pipeline/blob/master/LICENSE)
 [![Releases](https://img.shields.io/github/v/release/andygeiss/memory-pipeline)](https://github.com/andygeiss/memory-pipeline/releases)
 [![Go Report Card](https://goreportcard.com/badge/github.com/andygeiss/memory-pipeline)](https://goreportcard.com/report/github.com/andygeiss/memory-pipeline)
-[![Codacy Badge](https://app.codacy.com/project/badge/Grade/f9f01632dff14c448dbd4688abbd04e8)](https://app.codacy.com/gh/andygeiss/memory-pipeline/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
-[![Codacy Badge](https://app.codacy.com/project/badge/Coverage/f9f01632dff14c448dbd4688abbd04e8)](https://app.codacy.com/gh/andygeiss/memory-pipeline/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_coverage)
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/59c2c76329c5448bb41f994b137e257e)](https://app.codacy.com/gh/andygeiss/memory-pipeline/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
+[![Codacy Badge](https://app.codacy.com/project/badge/Coverage/59c2c76329c5448bb41f994b137e257e)](https://app.codacy.com/gh/andygeiss/memory-pipeline/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_coverage)
 
 A CLI tool that extracts structured knowledge notes from source files using a local LLM, generates embeddings, and stores them as a searchable knowledge base.
 
