@@ -1,7 +1,3 @@
-<p align="center">
-<img src="https://github.com/andygeiss/memory-pipeline/blob/main/cmd/server/assets/static/img/icon-192.png?raw=true" width="100"/>
-</p>
-
 # Memory Pipeline
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/andygeiss/memory-pipeline.svg)](https://pkg.go.dev/github.com/andygeiss/memory-pipeline)
