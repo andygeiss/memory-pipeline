@@ -1,0 +1,23 @@
+# ======================================
+# Docker Compose Configuration
+# ======================================
+# Defines service: app (main application)
+# Environment variables: USER (system user) and APP_SHORTNAME (from .env or shell)
+#
+# Usage:
+#   just up       # Build image and start services
+#   just down     # Stop and remove all services
+#   docker-compose logs -f app  # View app logs
+
+services:
+  # ======================================
+  # App - Go DDD/Hexagonal Application
+  # ======================================
+  # Main application container built from Dockerfile
+  app:
+    image: "${USER}/${APP_SHORTNAME}:latest"
+    container_name: "${APP_SHORTNAME}"
+    env_file:
+      # Load all environment variables from .env into the container
+      - .env
+    restart: unless-stopped
