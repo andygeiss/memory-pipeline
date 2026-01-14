@@ -18,7 +18,9 @@ jobs:
         run: curl -o get.sh -Ls https://coverage.codacy.com/get.sh
 
       - name: Set up Just
-        uses: taiki-e/install-action@just
+        uses: taiki-e/install-action@0f9abeadd7b421a211fafd01ed6005a20d796e1e
+        with:
+          tool: just
 
       - name: Run tests with coverage
         run: just test
