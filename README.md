@@ -98,6 +98,7 @@ MEMORY_SOURCE_DIR=./docs APP_FILE_EXTENSIONS=.md just run
 just run              # Run the CLI locally
 just test             # Run tests with coverage
 just test-integration # Run integration tests (requires LM Studio)
+just profile          # Run benchmarks and generate CPU profile for PGO
 just fmt              # Format code
 just lint             # Lint code
 just build            # Build Docker image
@@ -110,7 +111,7 @@ just setup            # Install dependencies (macOS)
 
 ```
 memory-pipeline/
-├── cmd/cli/              # Application entry point
+├── cmd/cli/              # Application entry point + benchmarks
 ├── internal/
 │   ├── adapters/
 │   │   ├── inbound/      # File walker (input adapter)
@@ -156,6 +157,9 @@ just test-integration
 ```bash
 # Build binary
 go build -o bin/cli ./cmd/cli
+
+# Build with PGO optimization (after running just profile)
+go build -pgo=cpuprofile.pprof -o bin/cli ./cmd/cli
 
 # Build Docker image
 just build

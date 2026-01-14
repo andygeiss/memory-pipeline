@@ -66,7 +66,8 @@ The project uses **Hexagonal Architecture** (Ports and Adapters):
 memory-pipeline/
 ├── cmd/
 │   └── cli/
-│       └── main.go           # Application entry point
+│       ├── main.go           # Application entry point
+│       └── main_test.go      # Benchmarks for PGO profiling
 ├── internal/
 │   ├── adapters/
 │   │   ├── inbound/          # Driving adapters (inputs)
@@ -269,6 +270,9 @@ just test
 # Run integration tests (requires LM Studio)
 just test-integration
 
+# Run benchmarks and generate CPU profile for PGO
+just profile
+
 # Format code
 just fmt
 
@@ -277,6 +281,9 @@ just lint
 
 # Build Docker image
 just build
+
+# Build with PGO optimization
+go build -pgo=cpuprofile.pprof -o bin/cli ./cmd/cli
 
 # Start services
 just up
@@ -306,6 +313,13 @@ just down
 - Files are processed sequentially to respect LLM rate limits
 - Hash-based change detection avoids reprocessing unchanged files
 - PGO (Profile-Guided Optimization) supported via `just profile`
+- Benchmarks in `cmd/cli/main_test.go` use `b.Loop()` (Go 1.24+) for accurate profiling
+
+#### PGO Workflow
+
+1. Run `just profile` to generate `cpuprofile.pprof` from benchmarks
+2. Build with PGO: `go build -pgo=cpuprofile.pprof -o bin/cli ./cmd/cli`
+3. The Dockerfile uses PGO by default if `cpuprofile.pprof` exists
 
 ### Security
 
