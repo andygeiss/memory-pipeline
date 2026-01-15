@@ -64,9 +64,15 @@ func run() error {
 		return err
 	}
 
+	mw, err := outbound.NewMarkdownWriter(cfg.MemoryDocsDir)
+	if err != nil {
+		return err
+	}
+
 	// Create and configure the extraction service.
 	svc, err := extraction.NewService(
 		extraction.ServiceConfig{
+			Docs:       mw,
 			Embeddings: ec,
 			Files:      fs,
 			LLM:        llm,

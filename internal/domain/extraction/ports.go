@@ -1,5 +1,11 @@
 package extraction
 
+// DocWriter defines the interface for generating human-readable documentation.
+type DocWriter interface {
+	WriteDoc(note MemoryNote) error
+	Finalize() error
+}
+
 // EmbeddingClient defines the interface for generating embeddings from notes.
 type EmbeddingClient interface {
 	Embed(note MemoryNote) (EmbeddedNote, error)

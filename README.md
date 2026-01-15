@@ -7,11 +7,11 @@
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/59c2c76329c5448bb41f994b137e257e)](https://app.codacy.com/gh/andygeiss/memory-pipeline/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
 [![Codacy Badge](https://app.codacy.com/project/badge/Coverage/59c2c76329c5448bb41f994b137e257e)](https://app.codacy.com/gh/andygeiss/memory-pipeline/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_coverage)
 
-A CLI tool that extracts structured knowledge notes from source files using a local LLM, generates embeddings, and stores them as a searchable knowledge base.
+A CLI tool that extracts structured knowledge notes from source files using a local LLM, generates embeddings, stores them as a searchable knowledge base, and produces human-readable Markdown documentation.
 
 ## Overview
 
-Memory Pipeline scans your codebase for files with configurable extensions (`.md`, `.txt`, `.go` by default), processes them through an LLM to extract categorized notes, generates vector embeddings, and persists everything to JSON files. It's designed to work with local LLMs like [LM Studio](https://lmstudio.ai/) via an OpenAI-compatible API.
+Memory Pipeline scans your codebase for files with configurable extensions (`.md`, `.txt`, `.go` by default), processes them through an LLM to extract categorized notes, generates vector embeddings, persists everything to JSON files, and generates browsable Markdown documentation. It's designed to work with local LLMs like [LM Studio](https://lmstudio.ai/) via an OpenAI-compatible API.
 
 ### Note Categories
 
@@ -25,7 +25,8 @@ Memory Pipeline scans your codebase for files with configurable extensions (`.md
 - 🔍 **File Discovery** — Recursively scans directories for matching file extensions
 - 🤖 **LLM Extraction** — Uses local LLMs to extract structured knowledge
 - 📊 **Vector Embeddings** — Generates embeddings for semantic search
-- 💾 **State Tracking** — Tracks processed files to avoid redundant work
+- � **Documentation Generation** — Produces human-readable Markdown docs
+- �💾 **State Tracking** — Tracks processed files to avoid redundant work
 - 🔄 **Change Detection** — Re-processes files when content changes
 
 ## Requirements
@@ -65,6 +66,7 @@ go mod download
 3. **Check the output:**
    - `.memory-state.json` — Processing state for each file
    - `.memory-notes.json` — Extracted notes with embeddings
+   - `docs/` — Human-readable Markdown documentation
 
 ## Commands
 
@@ -90,6 +92,7 @@ Configuration is done via environment variables. Create a `.env` file or export 
 | `MEMORY_SOURCE_DIR` | `.` | Directory to scan for files |
 | `MEMORY_STATE_FILE` | `.memory-state.json` | Processing state file |
 | `MEMORY_FILE` | `.memory-notes.json` | Output notes file |
+| `MEMORY_DOCS_DIR` | `docs` | Output directory for Markdown docs |
 | `APP_FILE_EXTENSIONS` | `.md,.txt,.go` | Comma-separated file extensions |
 | `OPENAI_BASE_URL` | `http://localhost:1234/v1` | LLM API endpoint |
 | `OPENAI_API_KEY` | `not-used-in-local-llm-mode` | API key (if required) |
@@ -111,7 +114,7 @@ memory-pipeline/
 ├── internal/
 │   ├── adapters/
 │   │   ├── inbound/      # File walker (input adapter)
-│   │   └── outbound/     # LLM, embedding, and storage adapters
+│   │   └── outbound/     # LLM, embedding, storage, and docs adapters
 │   ├── config/           # Environment configuration
 │   └── domain/
 │       └── extraction/   # Core business logic
@@ -129,12 +132,32 @@ The project follows **Hexagonal Architecture** (Ports and Adapters) with Domain-
 3. **Extract** — LLM analyzes file content and extracts structured notes
 4. **Embed** — Embedding client generates vector representations
 5. **Store** — Notes with embeddings are persisted to JSON
+6. **Document** — Human-readable Markdown files are generated
 
 ```
-Files → FileWalker → LLMClient → EmbeddingClient → NoteStore
-            ↓                                          ↓
-      .memory-state.json                      .memory-notes.json
+Files → FileWalker → LLMClient → EmbeddingClient → NoteStore → MarkdownWriter
+            ↓                                          ↓              ↓
+      .memory-state.json                      .memory-notes.json   docs/
 ```
+
+### Generated Documentation
+
+The pipeline generates a `docs/` folder with organized Markdown files:
+
+```
+docs/
+├── index.md           # Overview with links and statistics
+├── learnings.md       # General knowledge and facts
+├── patterns.md        # Reusable patterns and best practices
+├── cookbooks.md       # Step-by-step instructions
+└── decisions.md       # Architectural decisions
+```
+
+Notes are grouped by source file path within each category, making it easy to browse and understand the extracted knowledge. The documentation is:
+
+- **Browsable** — Rendered Markdown works in GitHub/GitLab
+- **Searchable** — Standard text search works across all files
+- **Version controlled** — Track documentation evolution with Git
 
 ## Development
 

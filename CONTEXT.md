@@ -2,7 +2,7 @@
 
 ## 1. Project Purpose
 
-Memory Pipeline is a CLI tool that extracts structured knowledge notes from source files using a local LLM, generates embeddings, and stores them as a searchable knowledge base. It scans files with configurable extensions, processes them through an LLM to extract categorized notes (learnings, patterns, cookbooks, decisions), embeds them using a vector model, and persists them to JSON files.
+Memory Pipeline is a CLI tool that extracts structured knowledge notes from source files using a local LLM, generates embeddings, stores them as a searchable knowledge base, and produces human-readable Markdown documentation. It scans files with configurable extensions, processes them through an LLM to extract categorized notes (learnings, patterns, cookbooks, decisions), embeds them using a vector model, persists them to JSON files, and generates browsable documentation.
 
 This project follows Domain-Driven Design (DDD) with Hexagonal Architecture, serving as both a functional tool and a reference implementation for Go applications with clean separation between domain logic and infrastructure.
 
@@ -34,6 +34,7 @@ memory-pipeline/
 │   │   └── outbound/         # Driven adapters (outputs)
 │   │       ├── embedding_client.go
 │   │       ├── llm_client.go
+│   │       ├── markdown_writer.go
 │   │       └── note_store.go
 │   ├── config/
 │   │   └── config.go         # Environment configuration
@@ -101,6 +102,7 @@ The project uses **Hexagonal Architecture** (Ports and Adapters):
 │  outbound/                                                  │
 │    ├── embedding_client.go  → EmbeddingClient impl          │
 │    ├── llm_client.go        → LLMClient implementation      │
+│    ├── markdown_writer.go   → DocWriter implementation      │
 │    └── note_store.go        → NoteStore implementation      │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -201,6 +203,7 @@ func TestFileWalker_NextPending_EmptyDirectory_ReturnsError(t *testing.T) {
 | `MEMORY_SOURCE_DIR` | `.` | Directory to scan for files |
 | `MEMORY_STATE_FILE` | `.memory-state.json` | Processing state persistence |
 | `MEMORY_FILE` | `.memory-notes.json` | Extracted notes storage |
+| `MEMORY_DOCS_DIR` | `docs` | Generated documentation output |
 | `APP_FILE_EXTENSIONS` | `.md,.txt,.go` | File extensions to process |
 | `OPENAI_BASE_URL` | `http://localhost:1234/v1` | LLM API endpoint |
 | `OPENAI_CHAT_MODEL` | `qwen/qwen3-coder-30b` | Chat completion model |

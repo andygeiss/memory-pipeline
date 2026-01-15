@@ -12,6 +12,7 @@ type ConfigID string
 
 // Config holds the configuration parameters for the application.
 type Config struct {
+	MemoryDocsDir    string   `yaml:"memory_docs_dir"`
 	MemoryNotesFile  string   `yaml:"memory_notes_file"`
 	MemorySourceDir  string   `yaml:"memory_source_dir"`
 	MemoryStateFile  string   `yaml:"memory_state_file"`
@@ -32,6 +33,7 @@ func NewConfig() Config {
 
 	return Config{
 		FileExtensions:   exts,
+		MemoryDocsDir:    security.ParseStringOrDefault(os.Getenv("MEMORY_DOCS_DIR"), "docs"),
 		MemoryNotesFile:  security.ParseStringOrDefault(os.Getenv("MEMORY_FILE"), ".memory-notes.json"),
 		MemorySourceDir:  security.ParseStringOrDefault(os.Getenv("MEMORY_SOURCE_DIR"), "."),
 		MemoryStateFile:  security.ParseStringOrDefault(os.Getenv("MEMORY_STATE_FILE"), ".memory-state.json"),

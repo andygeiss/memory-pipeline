@@ -3,6 +3,7 @@ package extraction
 import "errors"
 
 var (
+	ErrServiceConfigMissingDocWriter       = errors.New("extraction: service_config is missing doc writer")
 	ErrServiceConfigMissingEmbeddingClient = errors.New("extraction: service_config is missing embedding client")
 	ErrServiceConfigMissingFileStore       = errors.New("extraction: service_config is missing file store")
 	ErrServiceConfigMissingLLMClient       = errors.New("extraction: service_config is missing LLM client")
@@ -15,6 +16,7 @@ type ProgressFn func(current, total int, desc string)
 
 // ServiceConfig holds the dependencies required to create a new extraction Service.
 type ServiceConfig struct {
+	Docs       DocWriter
 	Embeddings EmbeddingClient
 	Files      FileStore
 	LLM        LLMClient
@@ -24,6 +26,9 @@ type ServiceConfig struct {
 
 // Validate checks if the ServiceConfig has all required dependencies set.
 func (a ServiceConfig) Validate() error {
+	if a.Docs == nil {
+		return ErrServiceConfigMissingDocWriter
+	}
 	if a.Embeddings == nil {
 		return ErrServiceConfigMissingEmbeddingClient
 	}
@@ -46,6 +51,8 @@ func (a ServiceConfig) Validate() error {
 // It orchestrates the process of fetching files, extracting notes using an LLM,
 // embedding the notes, and storing them.
 type Service struct {
+	// docWriter generates human-readable documentation from notes.
+	docWriter DocWriter
 	// embeddingClient generates vector embeddings for memory notes.
 	embeddingClient EmbeddingClient
 	// fileStore manages file discovery, reading, and status tracking.
@@ -64,6 +71,7 @@ func NewService(cfg ServiceConfig) (*Service, error) {
 		return nil, err
 	}
 	return &Service{
+		docWriter:       cfg.Docs,
 		embeddingClient: cfg.Embeddings,
 		fileStore:       cfg.Files,
 		llmClient:       cfg.LLM,
@@ -78,7 +86,8 @@ func NewService(cfg ServiceConfig) (*Service, error) {
 // 2. For each file, read its content and extract notes using the LLMClient.
 // 3. Embed the notes using the EmbeddingClient.
 // 4. Store the notes in the NoteStore.
-// 5. Update the file status in the FileStore.
+// 5. Generate human-readable documentation.
+// 6. Update the file status in the FileStore.
 func (a *Service) Run() error {
 	// 1. Fetch pending files from the FileStore.
 	files, err := a.collectPendingFiles()
@@ -113,7 +122,12 @@ func (a *Service) Run() error {
 		return err
 	}
 
-	// 5. Update the file status in the FileStore.
+	// 5. Generate human-readable documentation.
+	if err := a.writeDocs(notes); err != nil {
+		return err
+	}
+
+	// 6. Update the file status in the FileStore.
 	return a.updateFileStatus(files)
 }
 
@@ -218,10 +232,26 @@ func (a *Service) updateFileStatus(files []File) error {
 	total := len(files)
 
 	for i, file := range files {
-		a.progressFn(i+1, total, "4. Updating status")
+		a.progressFn(i+1, total, "5. Updating status")
 		if err := a.fileStore.MarkProcessed(file.Path); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+// writeDocs generates human-readable documentation from extracted notes.
+func (a *Service) writeDocs(notes []MemoryNote) error {
+	total := len(notes)
+
+	for i, note := range notes {
+		a.progressFn(i+1, total, "4. Writing docs")
+		if err := a.docWriter.WriteDoc(note); err != nil {
+			return err
+		}
+	}
+
+	// Finalize documentation (write all files).
+	a.progressFn(total, total, "4. Finalizing docs")
+	return a.docWriter.Finalize()
 }

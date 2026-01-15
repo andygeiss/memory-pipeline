@@ -120,14 +120,56 @@ func (m *mockNoteStore) SaveNote(note extraction.EmbeddedNote) error {
 	return nil
 }
 
+// mockDocWriter implements extraction.DocWriter for testing.
+type mockDocWriter struct {
+	finalizeFunc func() error
+	writeFunc    func(note extraction.MemoryNote) error
+	notes        []extraction.MemoryNote
+}
+
+func (m *mockDocWriter) Finalize() error {
+	if m.finalizeFunc != nil {
+		return m.finalizeFunc()
+	}
+	return nil
+}
+
+func (m *mockDocWriter) WriteDoc(note extraction.MemoryNote) error {
+	m.notes = append(m.notes, note)
+	if m.writeFunc != nil {
+		return m.writeFunc(note)
+	}
+	return nil
+}
+
 // noOpProgress is a no-op progress function for testing.
 func noOpProgress(current, total int, desc string) {}
 
 // === ServiceConfig Tests ===
 
+func TestServiceConfig_Validate_MissingDocs_ReturnsError(t *testing.T) {
+	// Arrange
+	cfg := extraction.ServiceConfig{
+		Docs:       nil,
+		Embeddings: &mockEmbeddingClient{},
+		Files:      newMockFileStore(),
+		LLM:        &mockLLMClient{},
+		Notes:      &mockNoteStore{},
+		ProgressFn: noOpProgress,
+	}
+
+	// Act
+	err := cfg.Validate()
+
+	// Assert
+	assert.That(t, "err must not be nil", err != nil, true)
+	assert.That(t, "err must be ErrServiceConfigMissingDocWriter", errors.Is(err, extraction.ErrServiceConfigMissingDocWriter), true)
+}
+
 func TestServiceConfig_Validate_MissingEmbeddings_ReturnsError(t *testing.T) {
 	// Arrange
 	cfg := extraction.ServiceConfig{
+		Docs:       &mockDocWriter{},
 		Embeddings: nil,
 		Files:      newMockFileStore(),
 		LLM:        &mockLLMClient{},
@@ -146,6 +188,7 @@ func TestServiceConfig_Validate_MissingEmbeddings_ReturnsError(t *testing.T) {
 func TestServiceConfig_Validate_MissingFiles_ReturnsError(t *testing.T) {
 	// Arrange
 	cfg := extraction.ServiceConfig{
+		Docs:       &mockDocWriter{},
 		Embeddings: &mockEmbeddingClient{},
 		Files:      nil,
 		LLM:        &mockLLMClient{},
@@ -164,6 +207,7 @@ func TestServiceConfig_Validate_MissingFiles_ReturnsError(t *testing.T) {
 func TestServiceConfig_Validate_MissingLLM_ReturnsError(t *testing.T) {
 	// Arrange
 	cfg := extraction.ServiceConfig{
+		Docs:       &mockDocWriter{},
 		Embeddings: &mockEmbeddingClient{},
 		Files:      newMockFileStore(),
 		LLM:        nil,
@@ -182,6 +226,7 @@ func TestServiceConfig_Validate_MissingLLM_ReturnsError(t *testing.T) {
 func TestServiceConfig_Validate_MissingNotes_ReturnsError(t *testing.T) {
 	// Arrange
 	cfg := extraction.ServiceConfig{
+		Docs:       &mockDocWriter{},
 		Embeddings: &mockEmbeddingClient{},
 		Files:      newMockFileStore(),
 		LLM:        &mockLLMClient{},
@@ -200,6 +245,7 @@ func TestServiceConfig_Validate_MissingNotes_ReturnsError(t *testing.T) {
 func TestServiceConfig_Validate_MissingProgressFn_ReturnsError(t *testing.T) {
 	// Arrange
 	cfg := extraction.ServiceConfig{
+		Docs:       &mockDocWriter{},
 		Embeddings: &mockEmbeddingClient{},
 		Files:      newMockFileStore(),
 		LLM:        &mockLLMClient{},
@@ -218,6 +264,7 @@ func TestServiceConfig_Validate_MissingProgressFn_ReturnsError(t *testing.T) {
 func TestServiceConfig_Validate_AllPresent_ReturnsNil(t *testing.T) {
 	// Arrange
 	cfg := extraction.ServiceConfig{
+		Docs:       &mockDocWriter{},
 		Embeddings: &mockEmbeddingClient{},
 		Files:      newMockFileStore(),
 		LLM:        &mockLLMClient{},
@@ -237,6 +284,7 @@ func TestServiceConfig_Validate_AllPresent_ReturnsNil(t *testing.T) {
 func TestService_New_InvalidConfig_ReturnsError(t *testing.T) {
 	// Arrange
 	cfg := extraction.ServiceConfig{
+		Docs:       &mockDocWriter{},
 		Embeddings: nil,
 		Files:      newMockFileStore(),
 		LLM:        &mockLLMClient{},
@@ -254,6 +302,7 @@ func TestService_New_InvalidConfig_ReturnsError(t *testing.T) {
 func TestService_New_ValidConfig_ReturnsInstance(t *testing.T) {
 	// Arrange
 	cfg := extraction.ServiceConfig{
+		Docs:       &mockDocWriter{},
 		Embeddings: &mockEmbeddingClient{},
 		Files:      newMockFileStore(),
 		LLM:        &mockLLMClient{},
@@ -275,6 +324,7 @@ func TestService_Run_NoPendingFiles_ReturnsNil(t *testing.T) {
 	// Arrange
 	fs := newMockFileStore()
 	svc, _ := extraction.NewService(extraction.ServiceConfig{
+		Docs:       &mockDocWriter{},
 		Embeddings: &mockEmbeddingClient{},
 		Files:      fs,
 		LLM:        &mockLLMClient{},
@@ -299,6 +349,7 @@ func TestService_Run_SingleFile_ProcessesSuccessfully(t *testing.T) {
 	ns := &mockNoteStore{}
 	ec := &mockEmbeddingClient{}
 	svc, _ := extraction.NewService(extraction.ServiceConfig{
+		Docs:       &mockDocWriter{},
 		Embeddings: ec,
 		Files:      fs,
 		LLM:        &mockLLMClient{},
@@ -327,6 +378,7 @@ func TestService_Run_MultipleFiles_ProcessesAll(t *testing.T) {
 	fs.fileContents["/test/file2.md"] = "Content 2"
 	ns := &mockNoteStore{}
 	svc, _ := extraction.NewService(extraction.ServiceConfig{
+		Docs:       &mockDocWriter{},
 		Embeddings: &mockEmbeddingClient{},
 		Files:      fs,
 		LLM:        &mockLLMClient{},
@@ -350,6 +402,7 @@ func TestService_Run_FileReadError_MarksFileAsError(t *testing.T) {
 		{Hash: "hash1", Path: "/test/missing.md", Status: extraction.FilePending},
 	}
 	svc, _ := extraction.NewService(extraction.ServiceConfig{
+		Docs:       &mockDocWriter{},
 		Embeddings: &mockEmbeddingClient{},
 		Files:      fs,
 		LLM:        &mockLLMClient{},
@@ -379,6 +432,7 @@ func TestService_Run_LLMError_MarksFileAsError(t *testing.T) {
 		},
 	}
 	svc, _ := extraction.NewService(extraction.ServiceConfig{
+		Docs:       &mockDocWriter{},
 		Embeddings: &mockEmbeddingClient{},
 		Files:      fs,
 		LLM:        llm,
@@ -407,6 +461,7 @@ func TestService_Run_EmbeddingError_ReturnsError(t *testing.T) {
 		},
 	}
 	svc, _ := extraction.NewService(extraction.ServiceConfig{
+		Docs:       &mockDocWriter{},
 		Embeddings: ec,
 		Files:      fs,
 		LLM:        &mockLLMClient{},
@@ -434,6 +489,7 @@ func TestService_Run_SaveNoteError_ReturnsError(t *testing.T) {
 		},
 	}
 	svc, _ := extraction.NewService(extraction.ServiceConfig{
+		Docs:       &mockDocWriter{},
 		Embeddings: &mockEmbeddingClient{},
 		Files:      fs,
 		LLM:        &mockLLMClient{},
@@ -459,6 +515,7 @@ func TestService_Run_MarkProcessedError_ReturnsError(t *testing.T) {
 		return errors.New("mark processed error")
 	}
 	svc, _ := extraction.NewService(extraction.ServiceConfig{
+		Docs:       &mockDocWriter{},
 		Embeddings: &mockEmbeddingClient{},
 		Files:      fs,
 		LLM:        &mockLLMClient{},
@@ -487,6 +544,7 @@ func TestService_Run_NoNotesExtracted_MarksFilesProcessed(t *testing.T) {
 	}
 	ns := &mockNoteStore{}
 	svc, _ := extraction.NewService(extraction.ServiceConfig{
+		Docs:       &mockDocWriter{},
 		Embeddings: &mockEmbeddingClient{},
 		Files:      fs,
 		LLM:        llm,
@@ -521,6 +579,7 @@ func TestService_Run_MultipleNotesPerFile_SavesAll(t *testing.T) {
 	}
 	ns := &mockNoteStore{}
 	svc, _ := extraction.NewService(extraction.ServiceConfig{
+		Docs:       &mockDocWriter{},
 		Embeddings: &mockEmbeddingClient{},
 		Files:      fs,
 		LLM:        llm,
@@ -546,6 +605,7 @@ func TestService_Run_MarkErrorFails_ReturnsError(t *testing.T) {
 		return errors.New("mark error failed")
 	}
 	svc, _ := extraction.NewService(extraction.ServiceConfig{
+		Docs:       &mockDocWriter{},
 		Embeddings: &mockEmbeddingClient{},
 		Files:      fs,
 		LLM:        &mockLLMClient{},
@@ -590,6 +650,7 @@ func TestService_Run_EmbeddingPreservesNoteData_ReturnsCorrectData(t *testing.T)
 	}
 	ns := &mockNoteStore{}
 	svc, _ := extraction.NewService(extraction.ServiceConfig{
+		Docs:       &mockDocWriter{},
 		Embeddings: ec,
 		Files:      fs,
 		LLM:        llm,
@@ -617,6 +678,7 @@ func TestService_Run_PartialFileFailure_ContinuesProcessing(t *testing.T) {
 	fs.fileContents["/test/valid.md"] = "Valid content"
 	ns := &mockNoteStore{}
 	svc, _ := extraction.NewService(extraction.ServiceConfig{
+		Docs:       &mockDocWriter{},
 		Embeddings: &mockEmbeddingClient{},
 		Files:      fs,
 		LLM:        &mockLLMClient{},
