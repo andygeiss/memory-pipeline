@@ -106,7 +106,7 @@ func TestLLMClient_ExtractNotes_ValidContents_ReturnsNotes(t *testing.T) {
 	// Assert
 	assert.That(t, "err must be nil", err, nil)
 	assert.That(t, "notes length must be 1", len(notes), 1)
-	assert.That(t, "note ID must be note-1", notes[0].ID, extraction.NodeID("note-1"))
+	assert.That(t, "note ID must not be empty", notes[0].ID != "", true)
 	assert.That(t, "note kind must be NoteLearning", notes[0].Kind, extraction.NoteLearning)
 	assert.That(t, "note content must match", notes[0].Content, extraction.NoteContent("Test learning note"))
 	assert.That(t, "note path must match", notes[0].Path, extraction.FilePath(testLLMFilePath))

@@ -5,8 +5,7 @@ run:
 
 linters:
   default: all
-  disable:
-    # Disable overly strict or noisy linters (alphabetical order)
+  disable: # Disable overly strict or noisy linters (alphabetical order)
     - depguard # Import restrictions - not configured, blocks all imports
     - err113 # Error comparison - too strict
     - exhaustruct # Requires all struct fields - too verbose for tests

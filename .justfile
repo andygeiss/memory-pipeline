@@ -120,46 +120,23 @@ setup:
 # ======================================
 # Up - Start Docker Compose services
 # ======================================
-# Generates random Keycloak secret, builds image, and starts all services
+# Builds image, and starts all services
 # Steps:
-#   1. Replace CHANGE_ME_LOCAL_SECRET placeholder with random secret
-#   2. Build Docker image
-#   3. Start all services defined in docker-compose.yml with .env variables
-#   4. Wait briefly for Keycloak initialization (best-effort)
+#   1. Build Docker image
+#   2. Start all services defined in docker-compose.yml with .env variables
 #
 # Notes:
-# - `.env` and `.keycloak.json` are local-only files (copy from *.example).
-# - The secret rotation runs before containers start to ensure Keycloak and app match.
+# - `.env` is a local-only file (copy from *.example).
 
 up: build
-    #!/usr/bin/env bash
-    set -eu
-    echo "Starting local secret rotation..."
-    SECRET=$(LC_ALL=C tr -dc 'A-Za-z0-9' < /dev/urandom | head -c 32)
-    PLACEHOLDER="CHANGE_ME_LOCAL_SECRET"
-    for file in .env .keycloak.json; do
-        if [[ -f "$file" ]] && grep -q "$PLACEHOLDER" "$file"; then
-            sed -i '' "s/$PLACEHOLDER/$SECRET/g" "$file"
-            echo "Updated secret in: $file"
-        fi
-    done
-    echo "Secret rotation complete."
+    @echo "Starting service ..."
     docker-compose --env-file .env up -d
-    echo "Waiting for Keycloak to be ready..."
-    for i in {1..60}; do
-        if podman exec keycloak test -d /opt/keycloak/data/import 2>/dev/null; then
-            echo "✓ Keycloak is ready"
-            exit 0
-        fi
-        sleep 1
-    done
 
 # ======================================
 # Test - Run unit tests with coverage
 # ======================================
 # Runs all tests in internal/ with coverage profiling
 # Outputs coverage percentage and generates coverage.pprof
-# Also runs Python tests for tools/
 
 test:
     @echo "Running Go tests..."

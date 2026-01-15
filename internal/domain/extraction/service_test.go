@@ -120,6 +120,9 @@ func (m *mockNoteStore) SaveNote(note extraction.EmbeddedNote) error {
 	return nil
 }
 
+// noOpProgress is a no-op progress function for testing.
+func noOpProgress(current, total int, desc string) {}
+
 // === ServiceConfig Tests ===
 
 func TestServiceConfig_Validate_MissingEmbeddings_ReturnsError(t *testing.T) {
@@ -129,6 +132,7 @@ func TestServiceConfig_Validate_MissingEmbeddings_ReturnsError(t *testing.T) {
 		Files:      newMockFileStore(),
 		LLM:        &mockLLMClient{},
 		Notes:      &mockNoteStore{},
+		ProgressFn: noOpProgress,
 	}
 
 	// Act
@@ -146,6 +150,7 @@ func TestServiceConfig_Validate_MissingFiles_ReturnsError(t *testing.T) {
 		Files:      nil,
 		LLM:        &mockLLMClient{},
 		Notes:      &mockNoteStore{},
+		ProgressFn: noOpProgress,
 	}
 
 	// Act
@@ -163,6 +168,7 @@ func TestServiceConfig_Validate_MissingLLM_ReturnsError(t *testing.T) {
 		Files:      newMockFileStore(),
 		LLM:        nil,
 		Notes:      &mockNoteStore{},
+		ProgressFn: noOpProgress,
 	}
 
 	// Act
@@ -180,6 +186,7 @@ func TestServiceConfig_Validate_MissingNotes_ReturnsError(t *testing.T) {
 		Files:      newMockFileStore(),
 		LLM:        &mockLLMClient{},
 		Notes:      nil,
+		ProgressFn: noOpProgress,
 	}
 
 	// Act
@@ -190,6 +197,24 @@ func TestServiceConfig_Validate_MissingNotes_ReturnsError(t *testing.T) {
 	assert.That(t, "err must be ErrServiceConfigMissingNoteStore", errors.Is(err, extraction.ErrServiceConfigMissingNoteStore), true)
 }
 
+func TestServiceConfig_Validate_MissingProgressFn_ReturnsError(t *testing.T) {
+	// Arrange
+	cfg := extraction.ServiceConfig{
+		Embeddings: &mockEmbeddingClient{},
+		Files:      newMockFileStore(),
+		LLM:        &mockLLMClient{},
+		Notes:      &mockNoteStore{},
+		ProgressFn: nil,
+	}
+
+	// Act
+	err := cfg.Validate()
+
+	// Assert
+	assert.That(t, "err must not be nil", err != nil, true)
+	assert.That(t, "err must be ErrServiceConfigMissingProgressBar", errors.Is(err, extraction.ErrServiceConfigMissingProgressBar), true)
+}
+
 func TestServiceConfig_Validate_AllPresent_ReturnsNil(t *testing.T) {
 	// Arrange
 	cfg := extraction.ServiceConfig{
@@ -197,6 +222,7 @@ func TestServiceConfig_Validate_AllPresent_ReturnsNil(t *testing.T) {
 		Files:      newMockFileStore(),
 		LLM:        &mockLLMClient{},
 		Notes:      &mockNoteStore{},
+		ProgressFn: noOpProgress,
 	}
 
 	// Act
@@ -215,6 +241,7 @@ func TestService_New_InvalidConfig_ReturnsError(t *testing.T) {
 		Files:      newMockFileStore(),
 		LLM:        &mockLLMClient{},
 		Notes:      &mockNoteStore{},
+		ProgressFn: noOpProgress,
 	}
 
 	// Act
@@ -231,6 +258,7 @@ func TestService_New_ValidConfig_ReturnsInstance(t *testing.T) {
 		Files:      newMockFileStore(),
 		LLM:        &mockLLMClient{},
 		Notes:      &mockNoteStore{},
+		ProgressFn: noOpProgress,
 	}
 
 	// Act
@@ -251,6 +279,7 @@ func TestService_Run_NoPendingFiles_ReturnsNil(t *testing.T) {
 		Files:      fs,
 		LLM:        &mockLLMClient{},
 		Notes:      &mockNoteStore{},
+		ProgressFn: noOpProgress,
 	})
 
 	// Act
@@ -274,6 +303,7 @@ func TestService_Run_SingleFile_ProcessesSuccessfully(t *testing.T) {
 		Files:      fs,
 		LLM:        &mockLLMClient{},
 		Notes:      ns,
+		ProgressFn: noOpProgress,
 	})
 
 	// Act
@@ -301,6 +331,7 @@ func TestService_Run_MultipleFiles_ProcessesAll(t *testing.T) {
 		Files:      fs,
 		LLM:        &mockLLMClient{},
 		Notes:      ns,
+		ProgressFn: noOpProgress,
 	})
 
 	// Act
@@ -323,6 +354,7 @@ func TestService_Run_FileReadError_MarksFileAsError(t *testing.T) {
 		Files:      fs,
 		LLM:        &mockLLMClient{},
 		Notes:      &mockNoteStore{},
+		ProgressFn: noOpProgress,
 	})
 
 	// Act
@@ -351,6 +383,7 @@ func TestService_Run_LLMError_MarksFileAsError(t *testing.T) {
 		Files:      fs,
 		LLM:        llm,
 		Notes:      &mockNoteStore{},
+		ProgressFn: noOpProgress,
 	})
 
 	// Act
@@ -378,6 +411,7 @@ func TestService_Run_EmbeddingError_ReturnsError(t *testing.T) {
 		Files:      fs,
 		LLM:        &mockLLMClient{},
 		Notes:      &mockNoteStore{},
+		ProgressFn: noOpProgress,
 	})
 
 	// Act
@@ -404,6 +438,7 @@ func TestService_Run_SaveNoteError_ReturnsError(t *testing.T) {
 		Files:      fs,
 		LLM:        &mockLLMClient{},
 		Notes:      ns,
+		ProgressFn: noOpProgress,
 	})
 
 	// Act
@@ -428,6 +463,7 @@ func TestService_Run_MarkProcessedError_ReturnsError(t *testing.T) {
 		Files:      fs,
 		LLM:        &mockLLMClient{},
 		Notes:      &mockNoteStore{},
+		ProgressFn: noOpProgress,
 	})
 
 	// Act
@@ -455,6 +491,7 @@ func TestService_Run_NoNotesExtracted_MarksFilesProcessed(t *testing.T) {
 		Files:      fs,
 		LLM:        llm,
 		Notes:      ns,
+		ProgressFn: noOpProgress,
 	})
 
 	// Act
@@ -488,6 +525,7 @@ func TestService_Run_MultipleNotesPerFile_SavesAll(t *testing.T) {
 		Files:      fs,
 		LLM:        llm,
 		Notes:      ns,
+		ProgressFn: noOpProgress,
 	})
 
 	// Act
@@ -512,6 +550,7 @@ func TestService_Run_MarkErrorFails_ReturnsError(t *testing.T) {
 		Files:      fs,
 		LLM:        &mockLLMClient{},
 		Notes:      &mockNoteStore{},
+		ProgressFn: noOpProgress,
 	})
 
 	// Act
@@ -555,6 +594,7 @@ func TestService_Run_EmbeddingPreservesNoteData_ReturnsCorrectData(t *testing.T)
 		Files:      fs,
 		LLM:        llm,
 		Notes:      ns,
+		ProgressFn: noOpProgress,
 	})
 
 	// Act
@@ -581,6 +621,7 @@ func TestService_Run_PartialFileFailure_ContinuesProcessing(t *testing.T) {
 		Files:      fs,
 		LLM:        &mockLLMClient{},
 		Notes:      ns,
+		ProgressFn: noOpProgress,
 	})
 
 	// Act

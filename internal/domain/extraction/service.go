@@ -7,7 +7,11 @@ var (
 	ErrServiceConfigMissingFileStore       = errors.New("extraction: service_config is missing file store")
 	ErrServiceConfigMissingLLMClient       = errors.New("extraction: service_config is missing LLM client")
 	ErrServiceConfigMissingNoteStore       = errors.New("extraction: service_config is missing note store")
+	ErrServiceConfigMissingProgressBar     = errors.New("extraction: service_config is missing progress bar")
 )
+
+// ProgressFn defines a function type for reporting progress.
+type ProgressFn func(current, total int, desc string)
 
 // ServiceConfig holds the dependencies required to create a new extraction Service.
 type ServiceConfig struct {
@@ -15,6 +19,7 @@ type ServiceConfig struct {
 	Files      FileStore
 	LLM        LLMClient
 	Notes      NoteStore
+	ProgressFn ProgressFn
 }
 
 // Validate checks if the ServiceConfig has all required dependencies set.
@@ -31,6 +36,9 @@ func (a ServiceConfig) Validate() error {
 	if a.Notes == nil {
 		return ErrServiceConfigMissingNoteStore
 	}
+	if a.ProgressFn == nil {
+		return ErrServiceConfigMissingProgressBar
+	}
 	return nil
 }
 
@@ -38,10 +46,16 @@ func (a ServiceConfig) Validate() error {
 // It orchestrates the process of fetching files, extracting notes using an LLM,
 // embedding the notes, and storing them.
 type Service struct {
-	ec EmbeddingClient
-	fs FileStore
-	lc LLMClient
-	ns NoteStore
+	// embeddingClient generates vector embeddings for memory notes.
+	embeddingClient EmbeddingClient
+	// fileStore manages file discovery, reading, and status tracking.
+	fileStore FileStore
+	// llmClient extracts structured notes from file contents.
+	llmClient LLMClient
+	// noteStore persists embedded notes to storage.
+	noteStore NoteStore
+	// progressFn reports progress updates during pipeline execution.
+	progressFn ProgressFn
 }
 
 // NewService creates a new instance of the extraction Service.
@@ -50,10 +64,11 @@ func NewService(cfg ServiceConfig) (*Service, error) {
 		return nil, err
 	}
 	return &Service{
-		ec: cfg.Embeddings,
-		fs: cfg.Files,
-		lc: cfg.LLM,
-		ns: cfg.Notes,
+		embeddingClient: cfg.Embeddings,
+		fileStore:       cfg.Files,
+		llmClient:       cfg.LLM,
+		noteStore:       cfg.Notes,
+		progressFn:      cfg.ProgressFn,
 	}, nil
 }
 
@@ -107,7 +122,7 @@ func (a *Service) collectPendingFiles() ([]File, error) {
 	var files []File
 
 	for {
-		file, err := a.fs.NextPending()
+		file, err := a.fileStore.NextPending()
 		if err != nil {
 			// Check for sentinel error indicating no more files.
 			if isNoMoreFilesError(err) {
@@ -122,7 +137,7 @@ func (a *Service) collectPendingFiles() ([]File, error) {
 		}
 
 		// Mark file as processing.
-		if err := a.fs.MarkProcessing(file.Path); err != nil {
+		if err := a.fileStore.MarkProcessing(file.Path); err != nil {
 			return nil, err
 		}
 
@@ -140,21 +155,23 @@ func isNoMoreFilesError(err error) bool {
 // extractNotes reads file contents and extracts notes using the LLM.
 func (a *Service) extractNotes(files []File) ([]MemoryNote, error) {
 	var allNotes []MemoryNote
+	total := len(files)
 
-	for _, file := range files {
+	for i, file := range files {
+		a.progressFn(i+1, total, "1. Extracting notes")
 		// Read file contents.
-		contents, err := a.fs.ReadFile(file.Path)
+		contents, err := a.fileStore.ReadFile(file.Path)
 		if err != nil {
-			if markErr := a.fs.MarkError(file.Path, err.Error()); markErr != nil {
+			if markErr := a.fileStore.MarkError(file.Path, err.Error()); markErr != nil {
 				return nil, markErr
 			}
 			continue
 		}
 
 		// Extract notes from content.
-		notes, err := a.lc.ExtractNotes(file.Path, contents)
+		notes, err := a.llmClient.ExtractNotes(file.Path, contents)
 		if err != nil {
-			if markErr := a.fs.MarkError(file.Path, err.Error()); markErr != nil {
+			if markErr := a.fileStore.MarkError(file.Path, err.Error()); markErr != nil {
 				return nil, markErr
 			}
 			continue
@@ -169,9 +186,11 @@ func (a *Service) extractNotes(files []File) ([]MemoryNote, error) {
 // embedNotes generates embeddings for each note.
 func (a *Service) embedNotes(notes []MemoryNote) ([]EmbeddedNote, error) {
 	embeddedNotes := make([]EmbeddedNote, 0, len(notes))
+	total := len(notes)
 
-	for _, note := range notes {
-		embedded, err := a.ec.Embed(note)
+	for i, note := range notes {
+		a.progressFn(i+1, total, "2. Embedding notes")
+		embedded, err := a.embeddingClient.Embed(note)
 		if err != nil {
 			return nil, err
 		}
@@ -183,8 +202,11 @@ func (a *Service) embedNotes(notes []MemoryNote) ([]EmbeddedNote, error) {
 
 // saveNotes persists the embedded notes to the NoteStore.
 func (a *Service) saveNotes(notes []EmbeddedNote) error {
-	for _, note := range notes {
-		if err := a.ns.SaveNote(note); err != nil {
+	total := len(notes)
+
+	for i, note := range notes {
+		a.progressFn(i+1, total, "3. Saving notes")
+		if err := a.noteStore.SaveNote(note); err != nil {
 			return err
 		}
 	}
@@ -193,8 +215,11 @@ func (a *Service) saveNotes(notes []EmbeddedNote) error {
 
 // updateFileStatus marks all files as processed.
 func (a *Service) updateFileStatus(files []File) error {
-	for _, file := range files {
-		if err := a.fs.MarkProcessed(file.Path); err != nil {
+	total := len(files)
+
+	for i, file := range files {
+		a.progressFn(i+1, total, "4. Updating status")
+		if err := a.fileStore.MarkProcessed(file.Path); err != nil {
 			return err
 		}
 	}

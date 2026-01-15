@@ -1,7 +1,8 @@
 package main
 
 import (
-	"log"
+	"fmt"
+	"os"
 
 	"github.com/andygeiss/cloud-native-utils/service"
 	"github.com/andygeiss/memory-pipeline/internal/adapters/inbound"
@@ -12,11 +13,21 @@ import (
 
 func main() {
 	if err := run(); err != nil {
-		log.Fatalf("main: %v", err)
+		fmt.Printf("Error: %v\n", err)
 	}
-	log.Println("extraction completed successfully")
+	fmt.Println("Extraction completed successfully")
 }
 
+// printProgress displays the progress of a task in the console.
+func printProgress(current, total int, desc string) {
+	percent := float64(current) / float64(total) * 100
+	fmt.Printf("\r%-20s: [%3.0f%%] %d/%d", desc, percent, current, total)
+	if current == total {
+		fmt.Println() // newline when done
+	}
+}
+
+// run initializes and executes the memory extraction pipeline.
 func run() error {
 	// Create application context.
 	ctx, cancel := service.Context()
@@ -24,7 +35,8 @@ func run() error {
 
 	// Register shutdown hook.
 	service.RegisterOnContextDone(ctx, func() {
-		log.Println("main: shutting down memory-pipeline...")
+		fmt.Println("Shutting down ...")
+		os.Exit(0)
 	})
 
 	// Get configuration parameters.
@@ -59,6 +71,7 @@ func run() error {
 			Files:      fs,
 			LLM:        llm,
 			Notes:      ns,
+			ProgressFn: printProgress,
 		},
 	)
 	if err != nil {
