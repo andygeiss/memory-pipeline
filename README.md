@@ -22,12 +22,12 @@ Memory Pipeline scans your codebase for files with configurable extensions (`.md
 
 ## Features
 
-- 🔍 **File Discovery** — Recursively scans directories for matching file extensions
-- 🤖 **LLM Extraction** — Uses local LLMs to extract structured knowledge
-- 📊 **Vector Embeddings** — Generates embeddings for semantic search
-- � **Documentation Generation** — Produces human-readable Markdown docs
-- �💾 **State Tracking** — Tracks processed files to avoid redundant work
-- 🔄 **Change Detection** — Re-processes files when content changes
+- **File Discovery** — Recursively scans directories for matching file extensions
+- **LLM Extraction** — Uses local LLMs to extract structured knowledge
+- **Vector Embeddings** — Generates embeddings for semantic search
+- **Documentation Generation** — Produces human-readable Markdown docs
+- **State Tracking** — Tracks processed files to avoid redundant work
+- **Change Detection** — Re-processes files when content changes
 
 ## Requirements
 
